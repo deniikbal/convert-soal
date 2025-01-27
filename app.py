@@ -15,10 +15,15 @@ Upload file Word yang berisi soal-soal untuk diformat ke dalam template tabel.
 File akan otomatis dikonversi dan diupload ke Google Docs.
 """)
 
+# Link ke panduan
+with st.expander("📖 Panduan Autentikasi Detail"):
+    with open('PANDUAN_AUTENTIKASI.md', 'r', encoding='utf-8') as f:
+        st.markdown(f.read())
+
 # Cek status autentikasi Google Drive
 creds = get_google_auth()
 if not creds:
-    st.info("Silahkan selesaikan proses autentikasi Google Drive terlebih dahulu")
+    st.info("Silahkan buka panduan di atas dan ikuti langkah-langkah autentikasi dengan detail.")
     st.stop()
 
 # Fungsi untuk memproses file input
