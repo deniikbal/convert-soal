@@ -6,23 +6,39 @@ from docx.oxml.shared import qn
 from docx.enum.text import WD_COLOR_INDEX
 import pandas as pd
 import os
-from google_drive_helper import upload_to_drive
+from google_drive_helper import upload_to_drive, get_google_auth
 import json
 
-# Setup untuk credentials di cloud
-def setup_credentials():
-    if not os.path.exists('credentials.json'):
-        try:
-            credentials_json = st.secrets["general"]["credentials_json"]
-            with open('credentials.json', 'w') as f:
-                f.write(credentials_json)
-        except Exception as e:
-            st.error("""
-            Kredensial Google Cloud tidak ditemukan.
-            Jika menjalankan di lokal, pastikan file credentials.json ada di folder aplikasi.
-            Jika di Streamlit Cloud, pastikan secrets sudah dikonfigurasi dengan benar.
-            """)
-            st.stop()
+# Antarmuka Streamlit
+st.title('Aplikasi Format Soal')
+st.markdown("""
+Upload file Word yang berisi soal-soal untuk diformat ke dalam template tabel.
+File akan otomatis dikonversi dan diupload ke Google Docs.
+""")
+
+# Cek status autentikasi Google Drive
+creds = get_google_auth()
+if not creds:
+    st.error("""
+    Untuk menggunakan aplikasi ini di Streamlit Cloud, tambahkan service account credentials di Settings -> Secrets:
+    
+    ```toml
+    [service_account_info]
+    type = "service_account"
+    project_id = "your-project-id"
+    private_key_id = "your-private-key-id"
+    private_key = "your-private-key"
+    client_email = "your-service-account-email"
+    client_id = "your-client-id"
+    auth_uri = "https://accounts.google.com/o/oauth2/auth"
+    token_uri = "https://oauth2.googleapis.com/token"
+    auth_provider_x509_cert_url = "https://www.googleapis.com/oauth2/v1/certs"
+    client_x509_cert_url = "your-cert-url"
+    ```
+    
+    Atau letakkan file service-account.json di folder aplikasi jika menjalankan secara lokal.
+    """)
+    st.stop()
 
 # Fungsi untuk memproses file input
 def process_input_file(input_file):
@@ -133,20 +149,11 @@ def create_template(questions):
     
     return doc
 
-# Setup credentials saat aplikasi dimulai
-setup_credentials()
-
-# Antarmuka Streamlit
-st.title('Aplikasi Format Soal')
-st.markdown("""
-Upload file Word yang berisi soal-soal untuk diformat ke dalam template tabel.
-File akan otomatis dikonversi dan diupload ke Google Docs.
-""")
-
+# Upload file interface
 uploaded_file = st.file_uploader("Upload file soal", type=['docx'])
 
 if uploaded_file is not None:
-    output_path = 'output.docx'  # Pindahkan deklarasi ke sini
+    output_path = 'output.docx'
     try:
         questions = process_input_file(uploaded_file)
         
@@ -156,21 +163,21 @@ if uploaded_file is not None:
             output_doc = create_template(questions)
             output_doc.save(output_path)
             
-            # Upload ke Google Drive dan dapatkan link
-            try:
-                drive_link = upload_to_drive(output_path)
-                st.success('File berhasil diproses dan diupload ke Google Drive!')
-                st.markdown(f'[Buka file di Google Docs]({drive_link})')
-            except Exception as e:
-                st.error(f'Error saat upload ke Google Drive: {str(e)}')
-                # Tetap tampilkan opsi download lokal jika upload gagal
-                with open(output_path, "rb") as file:
-                    btn = st.download_button(
-                        label="Download file output",
-                        data=file,
-                        file_name="output.docx",
-                        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                    )
+            with st.spinner('Mengupload file ke Google Drive...'):
+                try:
+                    drive_link = upload_to_drive(output_path)
+                    st.success('File berhasil diproses dan diupload ke Google Drive!')
+                    st.markdown(f'[Buka file di Google Docs]({drive_link})')
+                except Exception as e:
+                    st.error(f'Error saat upload ke Google Drive: {str(e)}')
+                    # Tetap tampilkan opsi download lokal jika upload gagal
+                    with open(output_path, "rb") as file:
+                        btn = st.download_button(
+                            label="Download file output",
+                            data=file,
+                            file_name="output.docx",
+                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                        )
                     
     except Exception as e:
         st.error(f'Terjadi error: {str(e)}')

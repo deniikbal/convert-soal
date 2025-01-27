@@ -1,39 +1,43 @@
-from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
-from google.auth.transport.requests import Request
+from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 import os
 import io
-import pickle
+import json
+import streamlit as st
 
 SCOPES = ['https://www.googleapis.com/auth/drive.file']
 SERVICE_ACCOUNT_EMAIL = 'exo-cbt@exo-cbt-444008.iam.gserviceaccount.com'
 
 def get_google_auth():
-    creds = None
-    # Token file menyimpan akses dan refresh tokens
-    if os.path.exists('token.pickle'):
-        with open('token.pickle', 'rb') as token:
-            creds = pickle.load(token)
-            
-    # Jika tidak ada credentials yang valid, minta user untuk login
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
+    try:
+        # Ambil service account credentials dari secrets
+        if 'service_account_info' in st.secrets:
+            credentials_dict = st.secrets['service_account_info']
         else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                'credentials.json', SCOPES)
-            creds = flow.run_local_server(port=0)
-        # Simpan credentials untuk run berikutnya
-        with open('token.pickle', 'wb') as token:
-            pickle.dump(creds, token)
-    
-    return creds
+            # Fallback ke file credentials jika ada
+            if os.path.exists('service-account.json'):
+                with open('service-account.json', 'r') as f:
+                    credentials_dict = json.load(f)
+            else:
+                raise Exception("Service account credentials tidak ditemukan")
+        
+        credentials = service_account.Credentials.from_service_account_info(
+            credentials_dict,
+            scopes=SCOPES
+        )
+        
+        return credentials
+    except Exception as e:
+        st.error(f"Error dalam autentikasi: {str(e)}")
+        return None
 
 def upload_to_drive(file_path):
     try:
         creds = get_google_auth()
+        if not creds:
+            raise Exception("Authentication gagal")
+            
         service = build('drive', 'v3', credentials=creds)
         
         # Baca file
@@ -56,17 +60,6 @@ def upload_to_drive(file_path):
             body=file_metadata,
             media_body=media,
             fields='id,webViewLink'
-        ).execute()
-        
-        # Set permission untuk service account sebagai viewer
-        service.permissions().create(
-            fileId=file.get('id'),
-            body={
-                'type': 'user',
-                'role': 'reader',
-                'emailAddress': SERVICE_ACCOUNT_EMAIL
-            },
-            fields='id'
         ).execute()
         
         # Set general access untuk anyone with the link sebagai viewer
