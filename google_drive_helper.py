@@ -33,12 +33,31 @@ def get_google_auth():
                 auth_url = flow.authorization_url()[0]
                 st.markdown("""
                 ### Google Drive Authentication
-                Klik link berikut untuk autentikasi:
-                """)
-                st.markdown(f"[Login dengan Google]({auth_url})")
+                Ikuti langkah berikut untuk mendapatkan authorization code:
+                
+                1. Klik link berikut untuk login dengan Google: [Login dengan Google]({})
+                
+                2. Jika muncul peringatan "Google belum memverifikasi aplikasi ini":
+                   - Klik "Advanced" atau "Lanjutan"
+                   - Klik "Go to [Nama Project] (unsafe)" atau "Lanjutkan ke [Nama Project] (tidak aman)"
+                
+                3. Di halaman persetujuan:
+                   - Pilih akun Google Anda (jika diminta)
+                   - Klik "Continue" atau "Lanjutkan"
+                   - Klik "Allow" atau "Izinkan" untuk semua akses yang diminta
+                
+                4. Setelah itu Anda akan diarahkan ke halaman localhost yang menampilkan pesan error
+                   - JANGAN TUTUP halaman tersebut
+                   - Copy kode yang muncul di URL halaman tersebut
+                   - Kode berada setelah "code=" di URL
+                   - Contoh: jika URL-nya http://localhost/?code=4/1AX4XfWi..., maka kodenya adalah 4/1AX4XfWi...
+                
+                5. Paste kode tersebut di input box di bawah ini
+                """.format(auth_url))
                 
                 # Input box untuk authorization code
-                code = st.text_input('Masukkan authorization code:', type='password')
+                code = st.text_input('Masukkan authorization code:', type='default', 
+                                   help="Copy kode dari URL halaman localhost setelah 'code='")
                 if code:
                     try:
                         flow.fetch_token(code=code)
@@ -49,7 +68,7 @@ def get_google_auth():
                         st.success('Authentication berhasil!')
                         st.experimental_rerun()
                     except Exception as e:
-                        st.error(f'Authentication error: {str(e)}')
+                        st.error(f'Authentication error: {str(e)}. Pastikan kode yang dimasukkan benar dan lengkap.')
                         return None
                 else:
                     st.stop()  # Hentikan eksekusi sampai user memasukkan code
