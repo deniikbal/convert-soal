@@ -1,42 +1,70 @@
-from google.oauth2 import service_account
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 import os
 import io
 import json
+import pickle
 import streamlit as st
 
 SCOPES = ['https://www.googleapis.com/auth/drive.file']
-SERVICE_ACCOUNT_EMAIL = 'exo-cbt@exo-cbt-444008.iam.gserviceaccount.com'
 
 def get_google_auth():
-    try:
-        # Ambil service account credentials dari secrets
-        if 'service_account_info' in st.secrets:
-            credentials_dict = st.secrets['service_account_info']
+    creds = None
+    # Token file menyimpan akses dan refresh tokens
+    if os.path.exists('token.pickle'):
+        with open('token.pickle', 'rb') as token:
+            creds = pickle.load(token)
+            
+    # Jika tidak ada credentials yang valid, minta user untuk login
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
         else:
-            # Fallback ke file credentials jika ada
-            if os.path.exists('service-account.json'):
-                with open('service-account.json', 'r') as f:
-                    credentials_dict = json.load(f)
-            else:
-                raise Exception("Service account credentials tidak ditemukan")
-        
-        credentials = service_account.Credentials.from_service_account_info(
-            credentials_dict,
-            scopes=SCOPES
-        )
-        
-        return credentials
-    except Exception as e:
-        st.error(f"Error dalam autentikasi: {str(e)}")
-        return None
+            # Gunakan credentials dari secrets atau file lokal
+            try:
+                # Import langsung dari file credentials.json
+                flow = InstalledAppFlow.from_client_secrets_file(
+                    'credentials.json', SCOPES)
+                
+                # Tampilkan URL auth di Streamlit
+                auth_url = flow.authorization_url()[0]
+                st.markdown("""
+                ### Google Drive Authentication
+                Klik link berikut untuk autentikasi:
+                """)
+                st.markdown(f"[Login dengan Google]({auth_url})")
+                
+                # Input box untuk authorization code
+                code = st.text_input('Masukkan authorization code:', type='password')
+                if code:
+                    try:
+                        flow.fetch_token(code=code)
+                        creds = flow.credentials
+                        # Simpan credentials untuk run berikutnya
+                        with open('token.pickle', 'wb') as token:
+                            pickle.dump(creds, token)
+                        st.success('Authentication berhasil!')
+                        st.experimental_rerun()
+                    except Exception as e:
+                        st.error(f'Authentication error: {str(e)}')
+                        return None
+                else:
+                    st.stop()  # Hentikan eksekusi sampai user memasukkan code
+                    
+            except Exception as e:
+                st.error(f"Error dalam autentikasi: {str(e)}")
+                return None
+    
+    return creds
 
 def upload_to_drive(file_path):
     try:
         creds = get_google_auth()
         if not creds:
-            raise Exception("Authentication gagal")
+            raise Exception("Authentication required")
             
         service = build('drive', 'v3', credentials=creds)
         

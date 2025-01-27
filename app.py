@@ -7,7 +7,6 @@ from docx.enum.text import WD_COLOR_INDEX
 import pandas as pd
 import os
 from google_drive_helper import upload_to_drive, get_google_auth
-import json
 
 # Antarmuka Streamlit
 st.title('Aplikasi Format Soal')
@@ -19,25 +18,7 @@ File akan otomatis dikonversi dan diupload ke Google Docs.
 # Cek status autentikasi Google Drive
 creds = get_google_auth()
 if not creds:
-    st.error("""
-    Untuk menggunakan aplikasi ini di Streamlit Cloud, tambahkan service account credentials di Settings -> Secrets:
-    
-    ```toml
-    [service_account_info]
-    type = "service_account"
-    project_id = "your-project-id"
-    private_key_id = "your-private-key-id"
-    private_key = "your-private-key"
-    client_email = "your-service-account-email"
-    client_id = "your-client-id"
-    auth_uri = "https://accounts.google.com/o/oauth2/auth"
-    token_uri = "https://oauth2.googleapis.com/token"
-    auth_provider_x509_cert_url = "https://www.googleapis.com/oauth2/v1/certs"
-    client_x509_cert_url = "your-cert-url"
-    ```
-    
-    Atau letakkan file service-account.json di folder aplikasi jika menjalankan secara lokal.
-    """)
+    st.info("Silahkan selesaikan proses autentikasi Google Drive terlebih dahulu")
     st.stop()
 
 # Fungsi untuk memproses file input
