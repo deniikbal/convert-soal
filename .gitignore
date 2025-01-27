@@ -1,3 +1,7 @@
+# Credentials dan token
+credentials.json
+token.pickle
+
 # File output
 output.docx
 

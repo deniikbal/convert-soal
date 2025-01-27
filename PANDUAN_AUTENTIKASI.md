@@ -20,7 +20,6 @@
    - Di bagian "Authorized redirect URIs"
    - Tambahkan: `http://localhost:8501/`
    - Klik "SAVE"
-   - Download file credentials.json dan simpan di root folder project
 
 4. **Pastikan API Aktif**
    - Buka menu "APIs & Services" -> "Library"
@@ -83,18 +82,6 @@
 2. Anda akan bisa melihat form upload file
 3. File yang diupload akan otomatis dikonversi dan disimpan di Google Drive
 4. Link sharing akan dibuat otomatis dengan akses "Anyone with the link"
-
-## Berbagi Credentials
-Karena alasan keamanan, file credentials.json dan token.pickle tidak dapat di-commit langsung ke GitHub. Untuk berbagi credentials:
-
-1. **Untuk credentials.json:**
-   - Download dari Google Cloud Console
-   - Bagikan melalui channel yang aman (email atau chat pribadi)
-   - Pengguna lain harus meletakkan file di root folder project
-
-2. **Untuk token.pickle:**
-   - File ini akan dibuat otomatis setelah proses autentikasi berhasil
-   - Tidak perlu dibagikan karena akan dibuat untuk masing-masing pengguna
 
 ## Bantuan
 Jika mengalami kesulitan atau error yang tidak tercantum di panduan ini, silakan:
