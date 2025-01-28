@@ -1,30 +1,14 @@
 import streamlit as st
 import docx
 from docx import Document
-from docx.shared import Pt, RGBColor, Cm
-from docx.oxml.shared import qn
-from docx.enum.text import WD_COLOR_INDEX
-import pandas as pd
-import os
-from google_drive_helper import upload_to_drive, get_google_auth
+from docx.shared import Cm
 
 # Antarmuka Streamlit
 st.title('Aplikasi Format Soal')
 st.markdown("""
 Upload file Word yang berisi soal-soal untuk diformat ke dalam template tabel.
-File akan otomatis dikonversi dan diupload ke Google Docs.
+File hasil konversi akan tersedia untuk diunduh.
 """)
-
-# Link ke panduan
-with st.expander("📖 Panduan Autentikasi Detail"):
-    with open('PANDUAN_AUTENTIKASI.md', 'r', encoding='utf-8') as f:
-        st.markdown(f.read())
-
-# Cek status autentikasi Google Drive
-creds = get_google_auth()
-if not creds:
-    st.info("Silahkan buka panduan di atas dan ikuti langkah-langkah autentikasi dengan detail.")
-    st.stop()
 
 # Fungsi untuk memproses file input
 def process_input_file(input_file):
@@ -100,10 +84,6 @@ def create_template(questions):
         # Buat tabel 2 kolom x 10 baris
         table = doc.add_table(rows=10, cols=2)
         
-        # Set lebar kolom pertama ke 1.5 cm
-        for row in table.rows:
-            row.cells[0].width = Cm(1.5)
-            
         # Isi template sesuai format baru
         table.cell(0, 0).text = 'TS'
         table.cell(0, 1).text = 'PG'
@@ -127,11 +107,6 @@ def create_template(questions):
             
         # Format tabel dengan styling
         table.style = 'Table Grid'  # Tambahkan border ke seluruh tabel
-        
-        for row in table.rows:
-            for cell in row.cells:
-                # Set alignment ke kiri
-                cell.paragraphs[0].alignment = 0  # Left alignment
     
     return doc
 
@@ -149,21 +124,14 @@ if uploaded_file is not None:
             output_doc = create_template(questions)
             output_doc.save(output_path)
             
-            with st.spinner('Mengupload file ke Google Drive...'):
-                try:
-                    drive_link = upload_to_drive(output_path)
-                    st.success('File berhasil diproses dan diupload ke Google Drive!')
-                    st.markdown(f'[Buka file di Google Docs]({drive_link})')
-                except Exception as e:
-                    st.error(f'Error saat upload ke Google Drive: {str(e)}')
-                    # Tetap tampilkan opsi download lokal jika upload gagal
-                    with open(output_path, "rb") as file:
-                        btn = st.download_button(
-                            label="Download file output",
-                            data=file,
-                            file_name="output.docx",
-                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                        )
+            # Opsi download file
+            with open(output_path, "rb") as file:
+                btn = st.download_button(
+                    label="Download file output",
+                    data=file,
+                    file_name="output.docx",
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                )
                     
     except Exception as e:
         st.error(f'Terjadi error: {str(e)}')

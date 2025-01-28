@@ -2,7 +2,7 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
-from googleapiclient.http import MediaIoBaseUpload
+from googleapiclient.http import MediaFileUpload
 import os
 import io
 import json
@@ -79,48 +79,16 @@ def get_google_auth():
     
     return creds
 
-def upload_to_drive(file_path):
+def upload_to_drive(file_path, creds):
     try:
-        creds = get_google_auth()
-        if not creds:
-            raise Exception("Authentication required")
-            
         service = build('drive', 'v3', credentials=creds)
         
-        # Baca file
-        with open(file_path, 'rb') as f:
-            file_content = f.read()
-        
-        # Convert ke format yang bisa diupload
-        file_metadata = {
-            'name': os.path.basename(file_path),
-            'mimeType': 'application/vnd.google-apps.document'  # Convert ke Google Docs
-        }
-        media = MediaIoBaseUpload(
-            io.BytesIO(file_content),
-            mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            resumable=True
-        )
-        
-        # Upload file
-        file = service.files().create(
-            body=file_metadata,
-            media_body=media,
-            fields='id,webViewLink'
-        ).execute()
-        
-        # Set general access untuk anyone with the link sebagai viewer
-        service.permissions().create(
-            fileId=file.get('id'),
-            body={
-                'type': 'anyone',
-                'role': 'reader',
-                'allowFileDiscovery': False  # File hanya bisa diakses dengan link
-            },
-            fields='id'
-        ).execute()
+        file_metadata = {'name': 'output.docx'}
+        media = MediaFileUpload(file_path, mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+        file = service.files().create(body=file_metadata, media_body=media, fields='webViewLink').execute()
         
         return file.get('webViewLink')
-        
+    
     except Exception as e:
-        raise Exception(f"Error uploading to Google Drive: {str(e)}")
+        print(f'Error saat upload ke Google Drive: {str(e)}')
+        return None
