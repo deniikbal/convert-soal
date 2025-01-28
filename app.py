@@ -1,7 +1,7 @@
 import streamlit as st
 import docx
 from docx import Document
-from docx.shared import Cm
+from docx.shared import Cm, Inches
 
 # Antarmuka Streamlit
 st.title('Aplikasi Format Soal')
@@ -75,6 +75,13 @@ def create_template(questions):
     # Buat dokumen baru
     doc = Document()
     
+    # Pengaturan ukuran kertas A4
+    section = doc.sections[0]
+    section.page_width = Inches(8.27)  # Lebar kertas A4 dalam inches
+    section.page_height = Inches(11.69)  # Tinggi kertas A4 dalam inches
+    section.left_margin = Inches(1)  # Margin kiri dalam inches
+    section.right_margin = Inches(1)  # Margin kanan dalam inches
+    
     # Iterasi untuk setiap soal
     for i, question in enumerate(questions):
         # Tambahkan jarak antar tabel jika bukan soal pertama
@@ -83,6 +90,14 @@ def create_template(questions):
         
         # Buat tabel 2 kolom x 10 baris
         table = doc.add_table(rows=10, cols=2)
+        
+        # Set lebar kolom
+        col1_width = Cm(1.5)  # Lebar kolom 1: 1.5 cm
+        col2_width = section.page_width - col1_width - section.left_margin - section.right_margin
+        widths = (col1_width, col2_width)
+        for row in table.rows:
+            for idx, width in enumerate(widths):
+                row.cells[idx].width = width
         
         # Isi template sesuai format baru
         table.cell(0, 0).text = 'TS'
